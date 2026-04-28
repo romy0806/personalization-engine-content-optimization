@@ -119,13 +119,18 @@ notebooks/01_exploration.ipynb
 5. (Optional) Run the Streamlit app
 streamlit run app/streamlit_app.py
 
+
 ## Repository Structure
+
+```
 personalization-engine/
-├── data/ # Dataset (not included)
+├── data/                  # Dataset (not included)
 ├── notebooks/
-│ └── 01_exploration.ipynb
+│   └── 01_exploration.ipynb
 ├── app/
-│ └── streamlit_app.py
+│   └── streamlit_app.py
 ├── requirements.txt
 └── README.md
+```
+
 
