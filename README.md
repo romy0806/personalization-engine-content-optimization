@@ -1,6 +1,6 @@
 # Personalization Engine for Content Optimization
 
-
+![Hero Banner](hero_banner.png)
 
 ## Overview
 
