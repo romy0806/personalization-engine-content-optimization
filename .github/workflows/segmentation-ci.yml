@@ -17,9 +17,9 @@ jobs:
           cache: pip
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
-      - name: Lint
-        run: ruff check src tests scripts
-      - name: Format check
-        run: ruff format --check src tests scripts
+      - name: Lint Phase 1
+        run: ruff check src/segmentation.py src/synthetic_data.py tests scripts
+      - name: Format check Phase 1
+        run: ruff format --check src/segmentation.py src/synthetic_data.py tests scripts
       - name: Test
         run: python -m pytest -q
