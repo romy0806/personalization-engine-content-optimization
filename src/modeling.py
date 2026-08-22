@@ -4,8 +4,8 @@ Modeling utilities for content scoring and user segmentation.
 
 from sklearn.cluster import KMeans
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, classification_report
 
 
 def train_user_segments(features, n_clusters: int = 5, random_state: int = 42):
@@ -21,10 +21,7 @@ def train_engagement_model(X, y, random_state: int = 42):
         X, y, test_size=0.25, random_state=random_state, stratify=y
     )
     model = RandomForestClassifier(
-        n_estimators=200,
-        max_depth=10,
-        random_state=random_state,
-        class_weight="balanced"
+        n_estimators=200, max_depth=10, random_state=random_state, class_weight="balanced"
     )
     model.fit(X_train, y_train)
     preds = model.predict_proba(X_test)[:, 1]
