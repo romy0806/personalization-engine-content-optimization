@@ -11,9 +11,7 @@ from src.segmentation import SegmentationConfig, fit_segmentation
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--behaviors", type=Path, required=True, help="MIND behaviors.tsv"
-    )
+    parser.add_argument("--behaviors", type=Path, required=True, help="MIND behaviors.tsv")
     parser.add_argument("--news", type=Path, required=True, help="MIND news.tsv")
     parser.add_argument("--output", type=Path, default=Path("outputs"))
     return parser.parse_args()
@@ -27,9 +25,7 @@ def main() -> None:
     users.to_csv(args.output / "mind_user_features.csv", index=False)
     result.assignments.to_csv(args.output / "segment_assignments.csv", index=False)
     result.profiles.to_csv(args.output / "segment_profiles.csv", index=False)
-    result.candidates.to_csv(
-        args.output / "segmentation_model_comparison.csv", index=False
-    )
+    result.candidates.to_csv(args.output / "segmentation_model_comparison.csv", index=False)
     selected = result.candidates.iloc[0]
     print(
         f"Selected {result.selected_algorithm} with {result.selected_clusters} segments; "
