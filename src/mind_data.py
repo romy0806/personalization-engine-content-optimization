@@ -25,9 +25,7 @@ def read_mind_behaviors(path: str | Path) -> pd.DataFrame:
     data = pd.read_csv(path, sep="\t", names=BEHAVIOR_COLUMNS, dtype=str)
     data["timestamp"] = pd.to_datetime(data["timestamp"], errors="coerce")
     if data["user_id"].isna().any() or data["timestamp"].isna().all():
-        raise ValueError(
-            "Invalid MIND behaviors file: user IDs and timestamps are required"
-        )
+        raise ValueError("Invalid MIND behaviors file: user IDs and timestamps are required")
     return data
 
 
@@ -83,24 +81,16 @@ def build_mind_user_features(
     if events.empty:
         raise ValueError("No valid MIND behavior records were found")
 
-    category_map = (
-        news.drop_duplicates("news_id").set_index("news_id")["category"].to_dict()
-    )
-    subcategory_map = (
-        news.drop_duplicates("news_id").set_index("news_id")["subcategory"].to_dict()
-    )
+    category_map = news.drop_duplicates("news_id").set_index("news_id")["category"].to_dict()
+    subcategory_map = news.drop_duplicates("news_id").set_index("news_id")["subcategory"].to_dict()
     reference_time = events["timestamp"].max()
     rows: list[dict[str, float | int | str]] = []
 
     for user_id, user_events in events.groupby("user_id", sort=False):
         histories = [_history_ids(value) for value in user_events["history"]]
-        impression_lists = [
-            _impression_pairs(value) for value in user_events["impressions"]
-        ]
+        impression_lists = [_impression_pairs(value) for value in user_events["impressions"]]
         history_ids = [news_id for history in histories for news_id in history]
-        impression_pairs = [
-            pair for impressions in impression_lists for pair in impressions
-        ]
+        impression_pairs = [pair for impressions in impression_lists for pair in impressions]
         exposed_ids = [news_id for news_id, _ in impression_pairs]
         clicked_ids = [news_id for news_id, label in impression_pairs if label == 1]
         consumed_ids = history_ids + clicked_ids
@@ -120,22 +110,17 @@ def build_mind_user_features(
             {
                 "user_id": str(user_id),
                 "recency_days": float(
-                    (reference_time - user_events["timestamp"].max()).total_seconds()
-                    / 86400
+                    (reference_time - user_events["timestamp"].max()).total_seconds() / 86400
                 ),
                 "sessions": len(user_events),
                 "active_days": int(user_events["timestamp"].dt.normalize().nunique()),
-                "history_length": int(
-                    max((len(values) for values in histories), default=0)
-                ),
+                "history_length": int(max((len(values) for values in histories), default=0)),
                 "impressions_total": int(impressions_total),
                 "clicks_total": int(clicks_total),
                 "click_through_rate": float(clicks_total / impressions_total)
                 if impressions_total
                 else 0.0,
-                "avg_impression_slate_size": float(
-                    impressions_total / len(user_events)
-                ),
+                "avg_impression_slate_size": float(impressions_total / len(user_events)),
                 "category_diversity": len(set(categories)),
                 "subcategory_diversity": len(set(subcategories)),
                 "dominant_category_share": dominant_share,
@@ -143,9 +128,7 @@ def build_mind_user_features(
         )
 
     features = pd.DataFrame(rows)
-    features["clicks_per_session"] = _safe_ratio(
-        features["clicks_total"], features["sessions"]
-    )
+    features["clicks_per_session"] = _safe_ratio(features["clicks_total"], features["sessions"])
     return features
 
 
