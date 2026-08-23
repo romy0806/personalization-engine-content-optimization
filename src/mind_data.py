@@ -87,13 +87,13 @@ def build_mind_user_features(
     rows: list[dict[str, float | int | str]] = []
 
     for user_id, user_events in events.groupby("user_id", sort=False):
-        histories = [_history_ids(value) for value in user_events["history"]]
+        user_events = user_events.sort_values("timestamp")
+        latest_history = _history_ids(user_events.iloc[-1]["history"])
         impression_lists = [_impression_pairs(value) for value in user_events["impressions"]]
-        history_ids = [news_id for history in histories for news_id in history]
         impression_pairs = [pair for impressions in impression_lists for pair in impressions]
         exposed_ids = [news_id for news_id, _ in impression_pairs]
         clicked_ids = [news_id for news_id, label in impression_pairs if label == 1]
-        consumed_ids = history_ids + clicked_ids
+        consumed_ids = latest_history + clicked_ids
         categories = [category_map.get(news_id) for news_id in consumed_ids]
         categories = [value for value in categories if pd.notna(value)]
         subcategories = [subcategory_map.get(news_id) for news_id in consumed_ids]
@@ -114,7 +114,7 @@ def build_mind_user_features(
                 ),
                 "sessions": len(user_events),
                 "active_days": int(user_events["timestamp"].dt.normalize().nunique()),
-                "history_length": int(max((len(values) for values in histories), default=0)),
+                "history_length": len(latest_history),
                 "impressions_total": int(impressions_total),
                 "clicks_total": int(clicks_total),
                 "click_through_rate": float(clicks_total / impressions_total)

@@ -52,3 +52,12 @@ def mind_behaviors() -> pd.DataFrame:
                 }
             )
     return pd.DataFrame(rows)
+
+
+@pytest.fixture()
+def mind_validation_behaviors(mind_behaviors: pd.DataFrame) -> pd.DataFrame:
+    validation = mind_behaviors.copy()
+    validation["user_id"] = "V" + validation["user_id"].str[1:]
+    validation["impression_id"] = "V" + validation["impression_id"]
+    validation["timestamp"] = validation["timestamp"] + pd.Timedelta(days=30)
+    return validation

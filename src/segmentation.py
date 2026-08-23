@@ -58,6 +58,15 @@ class SegmentationResult:
     preprocessor: BehavioralPreprocessor
 
 
+@dataclass
+class SegmentationValidationResult:
+    assignments: pd.DataFrame
+    profiles: pd.DataFrame
+    segment_comparison: pd.DataFrame
+    metrics: pd.DataFrame
+    feature_drift: pd.DataFrame
+
+
 class BehavioralPreprocessor:
     def __init__(self, config: SegmentationConfig):
         self.config = config
@@ -193,6 +202,41 @@ def _profiles(data: pd.DataFrame, labels: np.ndarray, config: SegmentationConfig
     return pd.DataFrame(rows).sort_values("user_share", ascending=False).reset_index(drop=True)
 
 
+def _population_stability_index(
+    expected: np.ndarray,
+    actual: np.ndarray,
+    bins: int = 10,
+) -> float:
+    """Calculate PSI using quantile boundaries learned only from training data."""
+    expected = np.asarray(expected, dtype=float)
+    actual = np.asarray(actual, dtype=float)
+    boundaries = np.unique(np.quantile(expected, np.linspace(0, 1, bins + 1)))
+    if len(boundaries) < 3:
+        return 0.0
+    boundaries[0] = -np.inf
+    boundaries[-1] = np.inf
+    expected_counts = np.histogram(expected, bins=boundaries)[0]
+    actual_counts = np.histogram(actual, bins=boundaries)[0]
+    epsilon = 1e-6
+    expected_share = np.maximum(expected_counts / len(expected), epsilon)
+    actual_share = np.maximum(actual_counts / len(actual), epsilon)
+    return float(np.sum((actual_share - expected_share) * np.log(actual_share / expected_share)))
+
+
+def _segment_distribution_psi(comparison: pd.DataFrame) -> float:
+    epsilon = 1e-6
+    expected = np.maximum(comparison["train_share"].to_numpy(), epsilon)
+    actual = np.maximum(comparison["validation_share"].to_numpy(), epsilon)
+    return float(np.sum((actual - expected) * np.log(actual / expected)))
+
+
+def _safe_validation_metric(metric, features: np.ndarray, labels: np.ndarray) -> float:
+    unique = np.unique(labels)
+    if len(unique) < 2 or len(unique) >= len(labels):
+        return float("nan")
+    return float(metric(features, labels))
+
+
 def fit_segmentation(
     data: pd.DataFrame, config: SegmentationConfig | None = None
 ) -> SegmentationResult:
@@ -257,4 +301,110 @@ def fit_segmentation(
     )
     return SegmentationResult(
         assignments, profiles, candidates, key[0], key[1], model, preprocessor
+    )
+
+
+def validate_segmentation(
+    fitted: SegmentationResult,
+    train_data: pd.DataFrame,
+    validation_data: pd.DataFrame,
+) -> SegmentationValidationResult:
+    """Score an untouched validation split without refitting any model component."""
+    config = fitted.preprocessor.config
+    train_features = fitted.preprocessor.transform(train_data)
+    validation_features = fitted.preprocessor.transform(validation_data)
+    labels = fitted.model.predict(validation_features)
+    if len(np.unique(labels)) < 2:
+        raise ValueError("Validation data collapsed into fewer than two segments")
+
+    name_map = fitted.profiles.set_index("segment_id")["segment_name"].to_dict()
+    user_ids = (
+        validation_data["user_id"]
+        if "user_id" in validation_data
+        else pd.Series(validation_data.index)
+    )
+    strengths = _assignment_strength(fitted.model, validation_features, labels)
+    assignments = pd.DataFrame(
+        {
+            "user_id": user_ids.to_numpy(),
+            "segment_id": labels,
+            "segment_name": [name_map[int(label)] for label in labels],
+            "assignment_strength": strengths,
+        }
+    )
+
+    profiles = _profiles(validation_data, labels, config)
+    profiles["segment_name"] = profiles["segment_id"].map(name_map)
+    all_segments = pd.DataFrame({"segment_id": range(fitted.selected_clusters)})
+    train_distribution = fitted.profiles[
+        ["segment_id", "segment_name", "users", "user_share"]
+    ].rename(columns={"users": "train_users", "user_share": "train_share"})
+    validation_distribution = profiles[["segment_id", "users", "user_share"]].rename(
+        columns={"users": "validation_users", "user_share": "validation_share"}
+    )
+    comparison = (
+        all_segments.merge(train_distribution, on="segment_id", how="left")
+        .merge(validation_distribution, on="segment_id", how="left")
+        .fillna(
+            {
+                "train_users": 0,
+                "train_share": 0.0,
+                "validation_users": 0,
+                "validation_share": 0.0,
+            }
+        )
+    )
+    comparison["share_delta"] = comparison["validation_share"] - comparison["train_share"]
+
+    validation_shares = np.bincount(labels, minlength=fitted.selected_clusters) / len(labels)
+    viable = bool(
+        validation_shares.min() >= config.min_cluster_share
+        and validation_shares.max() <= config.max_cluster_share
+    )
+    segment_psi = _segment_distribution_psi(comparison)
+    metrics = pd.DataFrame(
+        [
+            {"metric": "validation_users", "value": float(len(validation_data))},
+            {
+                "metric": "silhouette",
+                "value": _safe_validation_metric(silhouette_score, validation_features, labels),
+            },
+            {
+                "metric": "davies_bouldin",
+                "value": _safe_validation_metric(davies_bouldin_score, validation_features, labels),
+            },
+            {
+                "metric": "calinski_harabasz",
+                "value": _safe_validation_metric(
+                    calinski_harabasz_score, validation_features, labels
+                ),
+            },
+            {"metric": "mean_assignment_strength", "value": float(np.mean(strengths))},
+            {"metric": "p10_assignment_strength", "value": float(np.quantile(strengths, 0.10))},
+            {"metric": "segment_distribution_psi", "value": segment_psi},
+            {"metric": "segment_size_guardrails_passed", "value": float(viable)},
+        ]
+    )
+
+    feature_drift = pd.DataFrame(
+        {
+            "feature": config.features,
+            "psi": [
+                _population_stability_index(train_features[:, index], validation_features[:, index])
+                for index in range(len(config.features))
+            ],
+            "train_scaled_mean": train_features.mean(axis=0),
+            "validation_scaled_mean": validation_features.mean(axis=0),
+        }
+    )
+    feature_drift["scaled_mean_delta"] = (
+        feature_drift["validation_scaled_mean"] - feature_drift["train_scaled_mean"]
+    )
+    feature_drift = feature_drift.sort_values("psi", ascending=False).reset_index(drop=True)
+    return SegmentationValidationResult(
+        assignments=assignments,
+        profiles=profiles,
+        segment_comparison=comparison,
+        metrics=metrics,
+        feature_drift=feature_drift,
     )

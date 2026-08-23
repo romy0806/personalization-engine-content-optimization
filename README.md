@@ -10,9 +10,11 @@ Build and evaluate a content-personalization framework using the Microsoft MIND 
 
 1. Parse MIND `behaviors.tsv` and `news.tsv`.
 2. Engineer user-level interaction, recency, click, exposure, and topic-affinity features.
-3. Compare K-Means and Gaussian Mixture segmentation candidates.
-4. Validate separation, bootstrap stability, and segment-size viability.
-5. Compare a content-only baseline with a model augmented by user behavior/segments.
+3. Use MIND train data to compare K-Means and Gaussian Mixture candidates across 2–8 clusters.
+4. Select the train model using separation, bootstrap stability, and segment-size viability.
+5. Apply the frozen train preprocessing, model, and persona names to the untouched MIND dev split.
+6. Measure validation separation, assignment strength, segment drift, and feature PSI.
+7. Compare a content-only baseline with a model augmented by user behavior/segments.
 
 The original analysis reported AUC of 0.57 for the baseline and 0.69 for the enhanced model. Those historical results should be reproduced through the versioned pipeline before being treated as a release benchmark.
 
@@ -23,10 +25,15 @@ Download MINDsmall and place its files under `data/MINDsmall_train/` and `data/M
 ```bash
 python -m pip install -r requirements-dev.txt
 python -m scripts.run_segmentation \
-  --behaviors data/MINDsmall_train/behaviors.tsv \
-  --news data/MINDsmall_train/news.tsv
+  --train-behaviors data/MINDsmall_train/behaviors.tsv \
+  --train-news data/MINDsmall_train/news.tsv \
+  --validation-behaviors data/MINDsmall_dev/behaviors.tsv \
+  --validation-news data/MINDsmall_dev/news.tsv
 python -m pytest -q
 ```
+
+The development split never participates in preprocessing, cluster-count selection, model
+fitting, or persona naming. It is used only as an out-of-sample validation population.
 
 ## What is validated
 
@@ -35,11 +42,17 @@ python -m pytest -q
 - K-Means versus Gaussian Mixture model selection
 - Silhouette, Davies–Bouldin, Calinski–Harabasz, and bootstrap ARI evidence
 - Cluster-size guardrails and assignment-strength diagnostics
+- Frozen-model validation on the MIND development split
+- Train-versus-validation segment distribution and feature PSI drift evidence
 - Python 3.11 and 3.12 CI
 
 ## Current boundaries
 
-The Streamlit screen remains a static interface prototype. Recommendation ranking, React/FastAPI architecture, live integrations, and production monitoring are separate future phases. Test fixtures mimic the MIND schema but are not used as analytical evidence.
+The Streamlit screen remains a static interface prototype. Recommendation ranking,
+React/FastAPI architecture, live integrations, and production monitoring are separate future
+phases. The actual analysis uses downloaded Microsoft MIND train and development data. Small
+MIND-schema records remain only as automated software-test fixtures and are never used as
+analytical evidence or reported model results.
 
 ## Technology
 

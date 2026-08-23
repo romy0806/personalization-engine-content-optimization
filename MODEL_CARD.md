@@ -15,8 +15,10 @@ The model consumes the published MIND `behaviors.tsv` and `news.tsv` schemas. Us
 3. Impute numeric values, cap outliers, and apply robust scaling.
 4. Compare K-Means and Gaussian Mixture candidates across 2–8 segments.
 5. Evaluate separation, compactness, bootstrap stability, and cluster-size viability.
-6. Select a model using a documented composite score.
-7. Name segments from their behavior relative to the overall MIND population.
+6. Select a model using a documented composite score calculated on MIND train only.
+7. Name segments from their behavior relative to the MIND training population.
+8. Freeze preprocessing, model parameters, cluster count, and persona names.
+9. Score MIND dev without refitting and quantify segment and feature drift with PSI.
 
 ## Limitations
 
@@ -28,4 +30,8 @@ The model consumes the published MIND `behaviors.tsv` and `news.tsv` schemas. Us
 
 ## Monitoring and validation
 
-Track feature drift, cluster shares, bootstrap Adjusted Rand Index, assignment strength, and downstream recommendation quality. Validate changes on a time-separated or MIND development split and use controlled experiments before claiming engagement lift.
+Track feature drift, cluster shares, bootstrap Adjusted Rand Index, assignment strength, and
+downstream recommendation quality. Model selection and bootstrap stability are calculated on
+MIND train. MIND dev is an untouched validation population used for separation, assignment
+strength, cluster-size viability, segment-distribution PSI, and feature PSI. Controlled
+experiments are still required before claiming engagement lift.
