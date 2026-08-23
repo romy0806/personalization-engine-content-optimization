@@ -77,10 +77,7 @@ class BehavioralPreprocessor:
         return self
 
     def transform(self, data: pd.DataFrame) -> np.ndarray:
-        if any(
-            value is None
-            for value in (self.medians_, self.lower_, self.upper_, self.scaler_)
-        ):
+        if any(value is None for value in (self.medians_, self.lower_, self.upper_, self.scaler_)):
             raise RuntimeError("BehavioralPreprocessor must be fitted before transform")
         numeric = _validated_numeric_features(data, self.config)
         filled = numeric.fillna(self.medians_)
@@ -91,14 +88,10 @@ class BehavioralPreprocessor:
         return self.fit(data).transform(data)
 
 
-def _validated_numeric_features(
-    data: pd.DataFrame, config: SegmentationConfig
-) -> pd.DataFrame:
+def _validated_numeric_features(data: pd.DataFrame, config: SegmentationConfig) -> pd.DataFrame:
     missing = sorted(set(config.features) - set(data.columns))
     if missing:
-        raise ValueError(
-            f"Missing required segmentation features: {', '.join(missing)}"
-        )
+        raise ValueError(f"Missing required segmentation features: {', '.join(missing)}")
     if len(data) < 60:
         raise ValueError("Segmentation requires at least 60 users")
     if not 0 < config.min_cluster_share < config.max_cluster_share < 1:
@@ -106,9 +99,7 @@ def _validated_numeric_features(
     numeric = data.loc[:, config.features].apply(pd.to_numeric, errors="coerce")
     all_missing = numeric.columns[numeric.isna().all()].tolist()
     if all_missing:
-        raise ValueError(
-            f"Features contain no usable numeric values: {', '.join(all_missing)}"
-        )
+        raise ValueError(f"Features contain no usable numeric values: {', '.join(all_missing)}")
     return numeric.replace([np.inf, -np.inf], np.nan)
 
 
@@ -161,9 +152,7 @@ def _bootstrap_stability(model, features, reference_labels, config) -> float:
 def _minmax(series: pd.Series, higher_is_better: bool = True) -> pd.Series:
     spread = series.max() - series.min()
     normalized = (
-        pd.Series(0.5, index=series.index)
-        if spread == 0
-        else (series - series.min()) / spread
+        pd.Series(0.5, index=series.index) if spread == 0 else (series - series.min()) / spread
     )
     return normalized if higher_is_better else 1 - normalized
 
@@ -183,9 +172,7 @@ def _persona_name(z: pd.Series) -> str:
     return f"{strongest} segment"
 
 
-def _profiles(
-    data: pd.DataFrame, labels: np.ndarray, config: SegmentationConfig
-) -> pd.DataFrame:
+def _profiles(data: pd.DataFrame, labels: np.ndarray, config: SegmentationConfig) -> pd.DataFrame:
     numeric = data.loc[:, config.features].apply(pd.to_numeric, errors="coerce")
     means = numeric.assign(segment_id=labels).groupby("segment_id").mean()
     counts = pd.Series(labels).value_counts().sort_index()
@@ -203,11 +190,7 @@ def _profiles(
         }
         row.update(means.loc[segment_id].astype(float).to_dict())
         rows.append(row)
-    return (
-        pd.DataFrame(rows)
-        .sort_values("user_share", ascending=False)
-        .reset_index(drop=True)
-    )
+    return pd.DataFrame(rows).sort_values("user_share", ascending=False).reset_index(drop=True)
 
 
 def fit_segmentation(
@@ -238,12 +221,8 @@ def fit_segmentation(
                     "clusters": clusters,
                     "silhouette": float(silhouette_score(features, labels)),
                     "davies_bouldin": float(davies_bouldin_score(features, labels)),
-                    "calinski_harabasz": float(
-                        calinski_harabasz_score(features, labels)
-                    ),
-                    "stability_ari": _bootstrap_stability(
-                        model, features, labels, config
-                    ),
+                    "calinski_harabasz": float(calinski_harabasz_score(features, labels)),
+                    "stability_ari": _bootstrap_stability(model, features, labels, config),
                     "smallest_cluster_share": float(shares.min()),
                     "largest_cluster_share": float(shares.max()),
                     "business_viable": viable,
@@ -259,9 +238,7 @@ def fit_segmentation(
         + 0.20 * _minmax(candidates["stability_ari"])
     )
     candidates.loc[~candidates["business_viable"], "selection_score"] -= 1
-    candidates = candidates.sort_values("selection_score", ascending=False).reset_index(
-        drop=True
-    )
+    candidates = candidates.sort_values("selection_score", ascending=False).reset_index(drop=True)
     selected = candidates.iloc[0]
     if not bool(selected["business_viable"]):
         raise ValueError("No segmentation candidate passed the cluster-size guardrails")
