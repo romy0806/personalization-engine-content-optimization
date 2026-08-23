@@ -1,34 +1,43 @@
-# Personalization Engine 2.0: Validated Segmentation
+# Personalization Engine 2.0: MIND-Based Validated Segmentation
 
-This Phase 1 package replaces fixed-count user clustering with a reproducible model-selection and validation workflow. It is intentionally independent of the current static Streamlit demo so the methodology can be validated before the React and FastAPI application is built.
+This phase upgrades the original Microsoft MIND analysis with a reproducible user-level feature pipeline and evidence-based cluster selection. The analytical source remains MIND `behaviors.tsv` and `news.tsv`.
 
-## What it adds
+## MIND-derived features
 
-- User-level behavioral feature contract
-- Missing-value handling, outlier capping and robust scaling
-- K-Means and Gaussian Mixture comparison across 2–8 segments
-- Silhouette, Davies–Bouldin and Calinski–Harabasz evidence
-- Bootstrap stability using Adjusted Rand Index
-- Minimum and maximum segment-size guardrails
-- Relative assignment strength for every user (diagnostic, not a calibrated probability)
-- Evidence-based persona profiling and naming
-- Privacy-safe synthetic behavior generator
-- Reproducible CSV outputs and automated tests
+- Recency relative to the latest timestamp in the supplied observation window
+- Sessions and active days
+- Reading-history length
+- Total recommendation impressions and clicks
+- Click-through rate and clicks per session
+- Average impression-slate size
+- Category and subcategory diversity
+- Dominant-category share
 
-## Run locally
+These definitions are limited to fields provided by MIND. They do not claim subscription status, conversion, purchase intent, or other outcomes that MIND does not contain.
+
+## Model-selection workflow
+
+- Validate the MIND schemas and user population
+- Impute missing values, cap extreme observations, and apply robust scaling
+- Compare K-Means and Gaussian Mixture candidates across 2–8 segments
+- Evaluate Silhouette, Davies–Bouldin, Calinski–Harabasz, and bootstrap Adjusted Rand Index
+- Reject extremely small or dominant clusters
+- Generate descriptive segment names from relative behavioral evidence
+- Report relative assignment strength as a diagnostic, not a calibrated probability
+
+## Run with MIND
 
 ```bash
-python -m pip install -e ".[dev]"
-python -m pytest -q
-python -m scripts.run_segmentation
+python -m scripts.run_segmentation \
+  --behaviors data/MINDsmall_train/behaviors.tsv \
+  --news data/MINDsmall_train/news.tsv
 ```
 
-The runner writes three files to `outputs/`:
+The runner deliberately has no synthetic-data fallback. It exports:
 
+- `mind_user_features.csv`
 - `segment_assignments.csv`
 - `segment_profiles.csv`
 - `segmentation_model_comparison.csv`
 
-## Interpretation rule
-
-The selected number of segments is a model result, not a user-entered design choice. Analysts should still review whether the segments are sufficiently distinct, stable, actionable and appropriate for the intended decision. Online experimentation is required before claiming incremental impact.
+Small MIND-format fixtures are used only by automated tests. The repository does not redistribute the Microsoft dataset.
