@@ -10,7 +10,7 @@ This Phase 1 package replaces fixed-count user clustering with a reproducible mo
 - Silhouette, Davies–Bouldin and Calinski–Harabasz evidence
 - Bootstrap stability using Adjusted Rand Index
 - Minimum and maximum segment-size guardrails
-- Membership confidence for every user
+- Relative assignment strength for every user (diagnostic, not a calibrated probability)
 - Evidence-based persona profiling and naming
 - Privacy-safe synthetic behavior generator
 - Reproducible CSV outputs and automated tests
