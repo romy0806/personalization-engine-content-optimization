@@ -24,6 +24,6 @@ def test_export_contract(tmp_path: Path):
         "user_id",
         "segment_id",
         "segment_name",
-        "membership_confidence",
+        "assignment_strength",
     }.issubset(assignments.columns)
     assert {"segment_id", "segment_name", "users", "user_share"}.issubset(profiles.columns)

@@ -132,15 +132,16 @@ def _fit_predict(model, features: np.ndarray) -> np.ndarray:
     return model.fit_predict(features)
 
 
-def _membership_confidence(model, features: np.ndarray, labels: np.ndarray) -> np.ndarray:
+def _assignment_strength(model, features: np.ndarray, labels: np.ndarray) -> np.ndarray:
+    """Return relative assignment strength, not a calibrated probability."""
     if isinstance(model, GaussianMixture):
         return model.predict_proba(features).max(axis=1)
 
     distances = model.transform(features)
     safe_distances = np.maximum(distances, 1e-12)
     inverse = 1 / safe_distances
-    probabilities = inverse / inverse.sum(axis=1, keepdims=True)
-    return probabilities[np.arange(len(features)), labels]
+    relative_strength = inverse / inverse.sum(axis=1, keepdims=True)
+    return relative_strength[np.arange(len(features)), labels]
 
 
 def _bootstrap_stability(
@@ -152,24 +153,22 @@ def _bootstrap_stability(
     rng = np.random.default_rng(config.random_state)
     scores: list[float] = []
     sample_size = max(30, int(len(features) * config.bootstrap_fraction))
+    cluster_count = len(np.unique(reference_labels))
 
     for iteration in range(config.bootstrap_iterations):
         indices = rng.choice(len(features), size=sample_size, replace=True)
-        unique_indices = np.unique(indices)
-        if len(unique_indices) <= len(np.unique(reference_labels)):
+        if len(np.unique(indices)) <= cluster_count:
             continue
+
         candidate = clone(model)
         if hasattr(candidate, "random_state"):
             candidate.set_params(random_state=config.random_state + iteration + 1)
-        candidate_labels = _fit_predict(candidate, features[indices])
 
-        # Repeated observations receive their modal bootstrap assignment.
-        bootstrap_assignment: dict[int, int] = {}
-        for index in unique_indices:
-            observed = candidate_labels[indices == index]
-            bootstrap_assignment[int(index)] = int(np.bincount(observed).argmax())
-        aligned = np.array([bootstrap_assignment[int(index)] for index in unique_indices])
-        scores.append(adjusted_rand_score(reference_labels[unique_indices], aligned))
+        candidate.fit(features[indices])
+        candidate_labels = candidate.predict(features)
+        if len(np.unique(candidate_labels)) < 2:
+            continue
+        scores.append(adjusted_rand_score(reference_labels, candidate_labels))
 
     return float(np.mean(scores)) if scores else 0.0
 
@@ -299,7 +298,7 @@ def fit_segmentation(
 
     key = (str(selected["algorithm"]), int(selected["clusters"]))
     model, labels = fitted[key]
-    confidence = _membership_confidence(model, features, labels)
+    assignment_strength = _assignment_strength(model, features, labels)
     profiles = _segment_profiles(data, labels, config)
     name_map = profiles.set_index("segment_id")["segment_name"].to_dict()
 
@@ -311,7 +310,7 @@ def fit_segmentation(
             "user_id": user_ids.to_numpy(),
             "segment_id": labels,
             "segment_name": [name_map[int(label)] for label in labels],
-            "membership_confidence": confidence,
+            "assignment_strength": assignment_strength,
         }
     )
     return SegmentationResult(

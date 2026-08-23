@@ -30,11 +30,12 @@ def test_pipeline_selects_a_viable_candidate(result):
     assert result.selected_clusters in {3, 4, 5, 6}
 
 
-def test_assignments_are_complete_and_confident(users, result):
+def test_assignments_are_complete_and_have_strength(users, result):
     assert len(result.assignments) == len(users)
     assert result.assignments["user_id"].is_unique
     assert result.assignments["segment_name"].notna().all()
-    assert result.assignments["membership_confidence"].between(0, 1).all()
+    assert result.assignments["assignment_strength"].between(0, 1).all()
+    assert "membership_confidence" not in result.assignments.columns
 
 
 def test_profiles_reconcile_to_population(users, result):

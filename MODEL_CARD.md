@@ -31,10 +31,10 @@ One row per user, calculated over a documented observation window. Required feat
 
 - Personas describe observed behavior and should not be interpreted as causal identities.
 - Segment meaning can drift when content, acquisition mix, seasonality or product design changes.
-- Sparse or newly acquired users may have low-confidence assignments.
+- Sparse or newly acquired users may have weak assignment strength.
 - Sensitive or protected attributes must not be used for targeting without an approved policy and fairness review.
 - Online experiments are required before claiming incremental business impact.
 
 ## Monitoring recommendations
 
-Track population stability, feature drift, cluster share changes, membership confidence, segment-level recommendation quality and experiment lift. Refit only after defined drift or performance thresholds are crossed.
+Track population stability, feature drift, cluster share changes, assignment strength, segment-level recommendation quality and experiment lift. Assignment strength is a relative diagnostic, not a calibrated probability. Refit only after defined drift or performance thresholds are crossed.
