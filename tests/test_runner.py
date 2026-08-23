@@ -21,6 +21,4 @@ def test_export_contract(tmp_path: Path, mind_behaviors, mind_news):
     assert {"user_id", "segment_id", "segment_name", "assignment_strength"}.issubset(
         assignments.columns
     )
-    assert {"segment_id", "segment_name", "users", "user_share"}.issubset(
-        profiles.columns
-    )
+    assert {"segment_id", "segment_name", "users", "user_share"}.issubset(profiles.columns)
