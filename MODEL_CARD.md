@@ -1,40 +1,31 @@
-# Behavioral Segmentation Model Card
+# MIND Behavioral Segmentation Model Card
 
 ## Intended use
 
-Discover explainable behavioral audience groups for content-personalization analysis and experiment design. Segment assignments are decision-support signals, not proof that a treatment causes engagement or conversion.
+Discover explainable reader groups from Microsoft MIND interaction logs for content-personalization analysis and experiment design. Segment assignments are decision-support signals, not causal effects or permanent user identities.
 
-## Inputs
+## Data and inputs
 
-One row per user, calculated over a documented observation window. Required features include recency, sessions, content consumption, click-through rate, category diversity, repeat visits, session depth, and high-intent actions.
+The model consumes the published MIND `behaviors.tsv` and `news.tsv` schemas. User features summarize observed reading history, sessions, recommendation exposure, clicks, recency, and topic diversity across the supplied observation window.
 
 ## Methodology
 
-1. Validate schema and minimum population size.
-2. Impute missing numeric values using fitted medians.
-3. Cap extreme observations using fitted 1st and 99th percentiles.
-4. Apply robust scaling.
-5. Compare K-Means and Gaussian Mixture candidates across 2–8 segments.
-6. Evaluate separation, compactness, stability and cluster-size viability.
-7. Select a deployable model using a documented composite score.
-8. Create persona names from cluster behavior relative to the total population.
-
-## Selection evidence
-
-- Silhouette score: higher is better.
-- Davies–Bouldin index: lower is better.
-- Calinski–Harabasz score: higher is better.
-- Bootstrap Adjusted Rand Index: higher is more stable.
-- Cluster shares: reject solutions with extremely small or dominant segments.
+1. Parse and validate MIND behavior and news records.
+2. Aggregate MIND interactions to one row per user.
+3. Impute numeric values, cap outliers, and apply robust scaling.
+4. Compare K-Means and Gaussian Mixture candidates across 2–8 segments.
+5. Evaluate separation, compactness, bootstrap stability, and cluster-size viability.
+6. Select a model using a documented composite score.
+7. Name segments from their behavior relative to the overall MIND population.
 
 ## Limitations
 
-- Personas describe observed behavior and should not be interpreted as causal identities.
-- Segment meaning can drift when content, acquisition mix, seasonality or product design changes.
-- Sparse or newly acquired users may have weak assignment strength.
-- Sensitive or protected attributes must not be used for targeting without an approved policy and fairness review.
-- Online experiments are required before claiming incremental business impact.
+- MIND represents news recommendation behavior, not purchases, subscriptions, or long-term customer value.
+- Recency is relative to the latest timestamp in the supplied MIND split.
+- Offline clusters and recommendation metrics do not prove incremental business impact.
+- Persona labels are descriptive summaries and require analyst review.
+- Segment structure may change across MIND train/dev splits or new observation windows.
 
-## Monitoring recommendations
+## Monitoring and validation
 
-Track population stability, feature drift, cluster share changes, assignment strength, segment-level recommendation quality and experiment lift. Assignment strength is a relative diagnostic, not a calibrated probability. Refit only after defined drift or performance thresholds are crossed.
+Track feature drift, cluster shares, bootstrap Adjusted Rand Index, assignment strength, and downstream recommendation quality. Validate changes on a time-separated or MIND development split and use controlled experiments before claiming engagement lift.
