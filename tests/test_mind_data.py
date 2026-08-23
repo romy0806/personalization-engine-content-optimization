@@ -14,7 +14,4 @@ def test_mind_feature_engineering_is_user_level(mind_behaviors, mind_news):
 def test_mind_features_preserve_behavioral_differences(mind_behaviors, mind_news):
     features = build_mind_user_features(mind_behaviors, mind_news).set_index("user_id")
     assert features.loc["U000", "sessions"] > features.loc["U002", "sessions"]
-    assert (
-        features.loc["U000", "click_through_rate"]
-        > features.loc["U002", "click_through_rate"]
-    )
+    assert features.loc["U000", "click_through_rate"] > features.loc["U002", "click_through_rate"]
