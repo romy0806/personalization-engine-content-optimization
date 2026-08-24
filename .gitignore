@@ -1,2 +1,10 @@
 data/MINDsmall_train/
 data/MINDsmall_dev/
+# Python virtual environment
+.venv/
+
+# Python caches and test artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
