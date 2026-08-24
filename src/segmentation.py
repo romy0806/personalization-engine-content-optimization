@@ -7,6 +7,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from scipy.optimize import linear_sum_assignment
 from sklearn.base import clone
 from sklearn.cluster import KMeans
 from sklearn.metrics import (
@@ -19,11 +20,7 @@ from sklearn.mixture import GaussianMixture
 from sklearn.preprocessing import RobustScaler
 
 DEFAULT_FEATURES = (
-    "recency_days",
-    "sessions",
-    "active_days",
     "history_length",
-    "impressions_total",
     "click_through_rate",
     "clicks_per_session",
     "avg_impression_slate_size",
@@ -166,19 +163,39 @@ def _minmax(series: pd.Series, higher_is_better: bool = True) -> pd.Series:
     return normalized if higher_is_better else 1 - normalized
 
 
-def _persona_name(z: pd.Series) -> str:
-    if z["recency_days"] > 0.6 and z["sessions"] < -0.35:
-        return "Dormant readers"
-    if z["click_through_rate"] > 0.5 and z["clicks_per_session"] > 0.35:
-        return "Highly responsive readers"
-    if z["dominant_category_share"] > 0.55 and z["history_length"] > 0.2:
-        return "Loyal topic specialists"
-    if z["category_diversity"] > 0.5:
-        return "Cross-topic explorers"
-    if z["sessions"] < -0.35:
-        return "Light readers"
-    strongest = z.sort_values(ascending=False).index[0].replace("_", " ").title()
-    return f"{strongest} segment"
+def _persona_names(z_scores: pd.DataFrame) -> dict[int, str]:
+    """Assign distinct, evidence-based names using relative segment behavior."""
+    scorecard = {
+        "Deep-history loyalists": z_scores["history_length"],
+        "Cross-topic explorers": (
+            z_scores["category_diversity"]
+            + z_scores["subcategory_diversity"]
+            - z_scores["dominant_category_share"]
+        ),
+        "Topic specialists": (z_scores["dominant_category_share"] - z_scores["category_diversity"]),
+        "Highly responsive readers": z_scores["click_through_rate"],
+        "High-intent clickers": z_scores["clicks_per_session"],
+        "Broad-slate browsers": z_scores["avg_impression_slate_size"],
+        "Light readers": -(
+            z_scores["history_length"]
+            + z_scores["clicks_per_session"]
+            + z_scores["category_diversity"]
+        ),
+    }
+    persona_names = list(scorecard)
+    segment_ids = [int(segment_id) for segment_id in z_scores.index]
+    normalized_scores = []
+    for scores in scorecard.values():
+        spread = float(scores.std(ddof=0))
+        normalized_scores.append(
+            ((scores - scores.mean()) / spread if spread else scores * 0).to_numpy()
+        )
+    score_matrix = np.vstack(normalized_scores)
+    persona_indices, segment_indices = linear_sum_assignment(score_matrix, maximize=True)
+    return {
+        segment_ids[segment_index]: persona_names[persona_index]
+        for persona_index, segment_index in zip(persona_indices, segment_indices, strict=True)
+    }
 
 
 def _profiles(data: pd.DataFrame, labels: np.ndarray, config: SegmentationConfig) -> pd.DataFrame:
@@ -186,11 +203,12 @@ def _profiles(data: pd.DataFrame, labels: np.ndarray, config: SegmentationConfig
     means = numeric.assign(segment_id=labels).groupby("segment_id").mean()
     counts = pd.Series(labels).value_counts().sort_index()
     z_scores = means.sub(numeric.mean()).div(numeric.std(ddof=0).replace(0, 1))
+    persona_names = _persona_names(z_scores)
     rows = []
     for segment_id in means.index:
         row = {
             "segment_id": int(segment_id),
-            "segment_name": _persona_name(z_scores.loc[segment_id]),
+            "segment_name": persona_names[int(segment_id)],
             "users": int(counts.loc[segment_id]),
             "user_share": float(counts.loc[segment_id] / len(data)),
             "defining_features": ", ".join(

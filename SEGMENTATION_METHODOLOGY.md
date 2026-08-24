@@ -15,6 +15,12 @@ This phase upgrades the original Microsoft MIND analysis with a reproducible use
 
 These definitions are limited to fields provided by MIND. They do not claim subscription status, conversion, purchase intent, or other outcomes that MIND does not contain.
 
+Raw recency, session, active-day, and impression totals remain in the exported user and profile
+tables for descriptive reporting. Cluster fitting uses the features that are comparable across
+MIND train and dev: reading-history length, click-through rate, clicks per session, average
+impression-slate size, category and subcategory diversity, and dominant-category share. This
+prevents the different train/dev observation windows from driving the segmentation.
+
 ## Model-selection workflow
 
 - Validate the MIND schemas and user population
@@ -22,7 +28,7 @@ These definitions are limited to fields provided by MIND. They do not claim subs
 - Compare K-Means and Gaussian Mixture candidates across 2–8 segments
 - Evaluate Silhouette, Davies–Bouldin, Calinski–Harabasz, and bootstrap Adjusted Rand Index
 - Reject extremely small or dominant clusters
-- Generate descriptive segment names from relative behavioral evidence
+- Generate unique descriptive segment names using a global best match to relative behavioral evidence
 - Report relative assignment strength as a diagnostic, not a calibrated probability
 - Freeze the train-fitted preprocessing, selected cluster count, model parameters, and persona names
 - Apply that frozen pipeline to MIND dev without refitting

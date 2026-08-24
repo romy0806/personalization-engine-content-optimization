@@ -9,7 +9,8 @@ Build and evaluate a content-personalization framework using the Microsoft MIND 
 ## Analytical approach
 
 1. Parse MIND `behaviors.tsv` and `news.tsv`.
-2. Engineer user-level interaction, recency, click, exposure, and topic-affinity features.
+2. Engineer user-level interaction, recency, click, exposure, and topic-affinity features; use
+   exposure-independent behavior rates and affinities for train/dev-comparable clustering.
 3. Use MIND train data to compare K-Means and Gaussian Mixture candidates across 2–8 clusters.
 4. Select the train model using separation, bootstrap stability, and segment-size viability.
 5. Apply the frozen train preprocessing, model, and persona names to the untouched MIND dev split.
