@@ -49,11 +49,18 @@ fitting, or persona naming. It is used only as an out-of-sample validation popul
 
 ## Current boundaries
 
-The Streamlit screen remains a static interface prototype. Recommendation ranking,
-React/FastAPI architecture, live integrations, and production monitoring are separate future
-phases. The actual analysis uses downloaded Microsoft MIND train and development data. Small
-MIND-schema records remain only as automated software-test fixtures and are never used as
-analytical evidence or reported model results.
+The Streamlit segmentation lab presents versioned outputs from the real MIND train/dev
+pipeline: selected-model evidence, persona profiles, held-out validation, drift diagnostics,
+and methodology. It intentionally reads compact result extracts rather than retraining during
+an interactive session.
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Recommendation ranking, React/FastAPI architecture, live integrations, and production
+monitoring are separate future phases. Small MIND-schema records remain only as automated
+software-test fixtures and are never used as analytical evidence or reported model results.
 
 ## Technology
 

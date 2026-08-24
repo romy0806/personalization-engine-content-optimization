@@ -1,0 +1,8 @@
+metric,value
+validation_users,50000
+silhouette,0.251760
+davies_bouldin,1.165771
+calinski_harabasz,20900.593
+mean_assignment_strength,0.393577
+p10_assignment_strength,0.290421
+segment_distribution_psi,0.048069

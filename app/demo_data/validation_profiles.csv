@@ -1,0 +1,6 @@
+segment_id,segment_name,validation_users,validation_share,defining_features,history_length,click_through_rate,clicks_per_session,avg_impression_slate_size,category_diversity,subcategory_diversity,dominant_category_share
+0,High-intent clickers,22751,0.45502,"avg_impression_slate_size, dominant_category_share, clicks_per_session",13.7537,0.037940,1.2104,46.0576,5.8846,9.6510,0.42207
+3,Highly responsive readers,10788,0.21576,"click_through_rate, dominant_category_share, clicks_per_session",11.9588,0.147076,1.1642,8.8860,5.2778,8.4782,0.45656
+2,Deep-history loyalists,9322,0.18644,"subcategory_diversity, history_length, category_diversity",72.7191,0.062616,1.6762,40.9339,11.0561,28.3196,0.35348
+4,Cross-topic explorers,4453,0.08906,"clicks_per_session, avg_impression_slate_size, category_diversity",26.1525,0.071907,3.8568,78.1225,8.0216,15.7810,0.37493
+1,Topic specialists,2686,0.05372,"click_through_rate, dominant_category_share, history_length",14.7215,0.482587,1.0436,2.2106,5.5365,9.4829,0.44060

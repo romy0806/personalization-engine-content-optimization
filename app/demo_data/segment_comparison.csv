@@ -1,0 +1,6 @@
+segment_id,segment_name,train_users,train_share,validation_users,validation_share,share_delta
+0,High-intent clickers,27666,0.55332,22751,0.45502,-0.09830
+1,Topic specialists,2729,0.05458,2686,0.05372,-0.00086
+2,Deep-history loyalists,6325,0.12650,9322,0.18644,0.05994
+3,Highly responsive readers,9550,0.19100,10788,0.21576,0.02476
+4,Cross-topic explorers,3730,0.07460,4453,0.08906,0.01446

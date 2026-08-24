@@ -1,0 +1,8 @@
+feature,psi,scaled_mean_delta
+clicks_per_session,0.173841,0.091782
+history_length,0.093232,0.379286
+subcategory_diversity,0.056635,0.129038
+category_diversity,0.040045,0.074880
+avg_impression_slate_size,0.036782,0.013379
+click_through_rate,0.031774,0.121867
+dominant_category_share,0.003605,0.006902
